@@ -27,7 +27,7 @@ const connection = new signalr.HubConnectionBuilder()
   .build();
 
 export default {
-  name: "HelloWorld",
+  name: "LandingPage",
   data() {
     return {
       newMessage: "",
@@ -41,14 +41,20 @@ export default {
   props: {
     msg: String
   },
-  created() {
+  async created() {
     connection.on("broadcastMessage", message => {
       this.messages.push(message);
     });
 
-    connection.start().then(() => {
-      console.info("connection started");
-    });
+    try {
+      await connection.start();
+      console.assert(connection.state === 1);
+      // console.log("connected");
+    } catch (error) {
+      console.assert(connection.state === 0);
+      // console.log("Disconnected => retryy");
+      setTimeout(() => start(), 3000);
+    }
   },
   methods: {
     handleCreated() {},
@@ -57,7 +63,7 @@ export default {
       connection.invoke("send", this.newMessage).then(() => {
         this.newMessage = "";
       });
-    }
+    },
   }
 };
 </script>
