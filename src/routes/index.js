@@ -16,5 +16,6 @@ export default new Router({
       name: "sign-up",
       component: SignUp
     }
-  ]
+  ],
+  mode: 'history'
 })

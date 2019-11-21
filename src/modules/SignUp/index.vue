@@ -11,20 +11,21 @@
             id="input-1"
             v-model="form.userName"
             required
+            autocomplete="off"
             placeholder="Enter user name"
           ></b-form-input>
         </b-form-group>
-
-        <b-form-group id="input-group-2" label="First name:" label-for="input-2">
-          <b-form-input id="input-2" v-model="form.firstName" required placeholder="First name"></b-form-input>
+        <b-form-group id="input-group-2" label="Password">
+          <b-form-input type="password" v-model="form.password" required placeholder="Password" autocomplete="off"></b-form-input>
+          <b-form-invalid-feedback :state="validation">Your user ID must be 5-12 characters long.</b-form-invalid-feedback>
         </b-form-group>
-        <b-form-group id="input-group-2" label="Last Name:" label-for="input-2">
-          <b-form-input id="input-2" v-model="form.lastName" required placeholder="Last name"></b-form-input>
+        <b-form-group id="input-group-3" label="First name:" label-for="input-2">
+          <b-form-input id="input-3" v-model="form.firstName" required placeholder="First name" autocomplete="off"></b-form-input>
         </b-form-group>
-        <!-- <b-input v-model="form.password" :state="validation" id="feedback-user"></b-input>
-        <b-form-invalid-feedback :state="validation">Your user ID must be 5-12 characters long.</b-form-invalid-feedback> -->
+        <b-form-group id="input-group-4" label="Last Name:" label-for="input-2">
+          <b-form-input id="input-4" v-model="form.lastName" required placeholder="Last name" autocomplete="off"></b-form-input>
+        </b-form-group>
         <b-button type="submit" variant="primary">Submit</b-button>
-        <!-- <b-button type="reset" variant="danger">Reset</b-button> -->
       </b-form>
     </b-card>
   </b-container>
@@ -58,7 +59,7 @@ export default {
   methods: {
     async onSubmit(evt) {
       evt.preventDefault();
-      const result = await registerUser(this.form.firstName, this.form.lastName, this.form.userName);
+      const result = await registerUser(this.form.firstName, this.form.lastName, this.form.userName, this.form.password);
       localStorage.setItem('user_info', JSON.stringify({
         firstName: result.firstName,
         lastName: result.lastName,
@@ -82,9 +83,11 @@ export default {
     }
   },
   computed: {
-    validation() {
-      console.log(this.form);
-      return this.form.password.length < 5;
+    validation(e) {
+      if(this.form.password === ''){
+        return true;
+      }
+      return this.form.password.length > 5;
     }
   }
 };
