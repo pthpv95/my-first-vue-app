@@ -1,16 +1,16 @@
 <template>
   <div>
     <b-container>
-      <b-row align-h="end">
+      <div v-if="!isLoggedIn">
+        <SignIn />
         <router-link v-if="!user" to="/sign-up">Sign up ?</router-link>
-        <h3 v-if="user !== null">
-          Hello
-          <strong>{{user.firstName}} {{user.lastName}}</strong>
-        </h3>
-        <a v-if="user" variant="info" @click="logout">Log out</a>
-      </b-row>
+      </div>
+      <h3 v-if="user !== null">
+        Hello
+        <strong>{{user.firstName}} {{user.lastName}}</strong>
+      </h3>
     </b-container>
-    <b-container>
+    <b-container v-if="isLoggedIn">
       <p>Your suggested friends</p>
       <b-row>
         <b-col v-for="contact in suggestedContacts" :key="contact.id">
@@ -33,31 +33,59 @@
   </div>
 </template>
 <script>
+import * as signalr from "@aspnet/signalr";
+
 import { getFriendSuggestions, addContact } from "./services";
+import SignIn from "../SignIn";
+
+const connection = new signalr.HubConnectionBuilder()
+  .withUrl("http://localhost:5000/notification", {
+    skipNegotiation: true,
+    transport: 1
+  })
+  .build();
 
 export default {
   name: "Home",
   data() {
     return {
+      isLoggedIn: false,
       user: null,
-      userInfo: JSON.parse(localStorage.getItem("user_info")) || null,
       suggestedContacts: []
     };
   },
-  components: {},
+  components: {
+    SignIn
+  },
   props: {
     msg: String
   },
-  async created() {},
+  async created() {
+    
+  },
   async mounted() {
-    if (this.userInfo) {
+    connection.on('reveiveContactRequest', data => {
+      console.log(data,'connectionid', connection.id);
+    });
+
+    try {
+      await connection.start();
+      console.assert(connection.state === 1);
+    } catch (error) {
+      console.assert(connection.state === 0);
+      setTimeout(() => start(), 3000);
+    }
+
+    const userInfo = JSON.parse(localStorage.getItem("user_info")) || null;
+    if (userInfo) {
       this.user = {
-        id: this.userInfo.id,
-        firstName: this.userInfo.firstName,
-        lastName: this.userInfo.lastName
+        id: userInfo.id,
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName
       };
-      const result = await getFriendSuggestions(this.userInfo.id);
-      this.suggestedContacts = result.data;
+      // const result = await getFriendSuggestions(userInfo.id);
+      // this.suggestedContacts = result.data;
+      this.isLoggedIn = true;
     }
   },
   methods: {
@@ -69,7 +97,9 @@ export default {
     onFriendRequestedToAdd(contactId) {
       addContact(this.user.id, contactId).then(res => {
         if (res) {
-          this.suggestedContacts = this.suggestedContacts.filter(c => c.id !== contactId);
+          // this.suggestedContacts = this.suggestedContacts.filter(
+          //   c => c.id !== contactId
+          // );
         }
       });
     }

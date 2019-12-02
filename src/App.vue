@@ -1,15 +1,14 @@
 <template>
-  <div id="app">
-    <!-- <img alt="Vue logo" src="./assets/logo.png" /> -->
-    <router-view></router-view>
-  </div>
+  <Layout></Layout>
 </template>
 
 <script>
+import Layout from './layout';
 
 export default {
   name: "app",
   components: {
+    Layout
   }
 };
 </script>

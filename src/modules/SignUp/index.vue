@@ -60,11 +60,12 @@ export default {
     async onSubmit(evt) {
       evt.preventDefault();
       const result = await registerUser(this.form.firstName, this.form.lastName, this.form.userName, this.form.password);
+      const data = result.data;
       localStorage.setItem('user_info', JSON.stringify({
-        firstName: result.firstName,
-        lastName: result.lastName,
-        userName: result.lastName,
-        id: result.id
+        firstName: data.firstName,
+        lastName: data.lastName,
+        userName: data.lastName,
+        id: data.id
       }));
       this.$router.push('/');
     },
