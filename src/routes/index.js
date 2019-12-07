@@ -3,6 +3,7 @@ import Router from "vue-router"
 import SignUp from "../modules/SignUp"
 import Home from "../modules/HomePage"
 import Profile from "../modules/Profile"
+import SilentRenew from '../modules/SilentRenew'
 
 Vue.use(Router)
 export default new Router({
@@ -21,6 +22,11 @@ export default new Router({
       path: '/profile',
       name: 'profile',
       component: Profile
+    },
+    {
+      path: '/silent-renew',
+      name: 'silentrenew',
+      component: SilentRenew
     }
   ],
   mode: 'history'

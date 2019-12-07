@@ -1,5 +1,4 @@
 <template>
-  <h1>this is callback page from authorization endpoint</h1>
 </template>
 
 <script>
@@ -13,7 +12,7 @@ export default {
   },
   mounted(){
     let self = this;
-    this.authService.signinRedirectCallback(self.signinParams).then((user) => {
+    this.authService.signinRedirectCallback().then((user) => {
       if(user){
         this.$router.push('/');
       }else{

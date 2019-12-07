@@ -4749,6 +4749,11 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
+jwt-decode@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-2.2.0.tgz#7d86bd56679f58ce6a84704a657dd392bba81a79"
+  integrity sha1-fYa9VmefWM5qhHBKZX3TkruoGnk=
+
 killable@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/killable/-/killable-1.0.1.tgz#4c8ce441187a061c7474fb87ca08e2a638194892"
@@ -5596,7 +5601,7 @@ obuf@^1.0.0, obuf@^1.1.2:
   resolved "https://registry.yarnpkg.com/obuf/-/obuf-1.1.2.tgz#09bea3343d41859ebd446292d11c9d4db619084e"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
 
-oidc-client@^1.9.1:
+oidc-client@^1.6.1:
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/oidc-client/-/oidc-client-1.9.1.tgz#c12c2a63adad7a6780b7cb3c2b9e97c903c1aaad"
   integrity sha512-AP1BwqASKIYrCBMu9dmNy3OTbhfaiBpy+5hZRbG1dmE2HqpQCp2JiJUNnNGTh2P+cnfVOrC79CGIluD1VMgMzQ==

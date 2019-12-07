@@ -1,115 +1,146 @@
 /* eslint-disable no-console */
-import oidc from 'oidc-client';
+import oidc from "oidc-client"
+// import jwtDecode from "jwt-decode"
 
 const userManager = new oidc.UserManager({
   userStore: new oidc.WebStorageStateStore(),
-  authority: 'http://localhost:5050',
-  client_id: 'spa',
-  redirect_uri: 'http://localhost:8080/#/callback',
-  response_type: 'id_token token',
-  scope: 'openid api1 profile',
-  post_logout_redirect_uri: window.location.origin + '/index.html',
-  silent_redirect_uri: "http://localhost:8080/silentRenew.html",
+  authority: "http://localhost:5050",
+  client_id: "spa",
+  redirect_uri: "http://localhost:8080/callback",
+  response_type: "id_token token",
+  scope: "openid api1 profile",
+  post_logout_redirect_uri: window.location.origin + "/index.html",
+  silent_redirect_uri: window.location.origin + "/silent-renew",
   accessTokenExpiringNotificationTime: 10,
-  automaticSilentRenew: false,
+  automaticSilentRenew: true,
   filterProtocolClaims: true,
   loadUserInfo: true
-});
+})
 
-oidc.Log.logger = console;
-oidc.Log.Level = oidc.Log.INFO;
+userManager.events.addAccessTokenExpiring(() => {
+  console.log("token expiring");
+})
+
+userManager.events.addAccessTokenExpired(() => {
+  console.log('token expired');
+  localStorage.removeItem('access_token');
+})
+
+oidc.Log.logger = console
+oidc.Log.Level = oidc.Log.INFO
 
 export default class AuthService {
-  renewTokenManually(){
+  renewTokenManually() {
     return new Promise((resolve, reject) => {
-      userManager.signinSilent().then((user) => {
-        if(user){
-          return resolve(user)
-        }else{
-          this.signIn(null);
-          return resolve(null)
-        }
-      }).catch((error) => {
-        return reject(error)
-      })
+      userManager
+        .signinSilent()
+        .then(user => {
+          if (user) {
+            return resolve(user)
+          } else {
+            this.signIn(null)
+            return resolve(null)
+          }
+        })
+        .catch(error => {
+          return reject(error)
+        })
     })
   }
 
-  getToken(){
+  getToken() {
     return new Promise((resolve, reject) => {
-      userManager.getUser().then((user) => {
-        if(user == null){
-          this.signIn(null)
-          return resolve(null)
-        }else{
-          return resolve(user)
-        }
-      }).catch((error) => {
-        return reject(error)
-      })
+      userManager
+        .getUser()
+        .then(user => {
+          if (user == null) {
+            this.signIn(null)
+            return resolve(null)
+          } else {
+            return resolve(user)
+          }
+        })
+        .catch(error => {
+          return reject(error)
+        })
     })
   }
 
-  getSignIn(){
+  getSignIn() {
     return new Promise((resolve, reject) => {
-      userManager.getUser().then((user) => {
-        if(user == null){
-          this.signIn(null)
-          return resolve(false)
-        }else{
-          localStorage.setItem('access_token', user.access_token)
-          return resolve(true)
-        }
-      }).catch((error) => {
-        return reject(error)
-      })
+      userManager
+        .getUser()
+        .then(user => {
+          if (user == null) {
+            this.signIn(null)
+            return resolve(false)
+          } else {
+            localStorage.setItem("access_token", user.access_token)
+            return resolve(true)
+          }
+        })
+        .catch(error => {
+          return reject(error)
+        })
     })
   }
 
   // Get the profile of the user logged in
-  getProfile(){
+  getProfile() {
     return new Promise((resolve, reject) => {
-      userManager.getUser().then((user) => {
-        if (user == null) {
-          this.signIn(null)
-          return resolve(null)
-        } else{          
-          return resolve(user.profile)
-        }
-      }).catch(function (err) {
-        console.log(err)
-        return reject(err)
-      });
+      userManager
+        .getUser()
+        .then(user => {
+          if (user == null) {
+            this.signIn(null)
+            return resolve(null)
+          } else {
+            return resolve(user.profile)
+          }
+        })
+        .catch(function(err) {
+          console.log(err)
+          return reject(err)
+        })
     })
   }
 
   // Redirect of the current window to the authorization endpoint.
-  signIn(){
-    userManager.signinRedirect().catch((err) => {
+  signIn() {
+    userManager.signinRedirect().catch(err => {
       console.log(err)
     })
   }
 
-  signinRedirectCallback(signinParams){
+  signinRedirectCallback(signinParams) {
     return new Promise((resolve, reject) => {
-      userManager.signinRedirectCallback(signinParams).then((user) => {
-        if(user){
-          resolve(user)
-        }else{
-          this.signIn()
-          resolve(null)
-        }
-      }).catch((error) => {
-        return reject(error)
-      })
+      userManager
+        .signinRedirectCallback(signinParams)
+        .then(user => {
+          if (user) {
+            resolve(user)
+          } else {
+            this.signIn()
+            resolve(null)
+          }
+        })
+        .catch(error => {
+          return reject(error)
+        })
     })
   }
 
   // Redirect of the current window to the authorization endpoint.
-  signOut(){
-    userManager.signoutRedirect().catch((err) => {
+  signOut() {
+    userManager.signoutRedirect().then(() => {}).catch(err => {
       console.log(err)
     })
+  }
+
+  signinSilent(){
+    userManager.signinSilentCallback()
+      .then(() => {
+      console.log('renew success');
+    }).catch((error) => console.log(error));
   }
 }
-

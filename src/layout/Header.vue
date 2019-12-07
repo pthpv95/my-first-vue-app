@@ -49,13 +49,15 @@
 
 <script>
 import notificationIcon from "../assets/images/notification-icon.svg";
+import AuthService from '../services/AuthService';
 
 export default {
   data() {
     return {
       user: null,
       numberOfNotifications: 99,
-      notificationIcon
+      notificationIcon,
+      authService: new AuthService()
     };
   },
   mounted() {
@@ -71,6 +73,9 @@ export default {
   methods: {
     onClickGoToProfile(){
       this.$router.push("/profile");
+    },
+    onSignOut(){
+      
     }
   }
 };
