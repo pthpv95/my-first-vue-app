@@ -4,6 +4,7 @@ import SignUp from "../modules/SignUp"
 import Home from "../modules/HomePage"
 import Profile from "../modules/Profile"
 import SilentRenew from '../modules/SilentRenew'
+import ChatConversation from "../modules/Conversation"
 
 Vue.use(Router)
 export default new Router({
@@ -19,15 +20,20 @@ export default new Router({
       component: SignUp
     },
     {
-      path: '/profile',
-      name: 'profile',
+      path: "/profile",
+      name: "profile",
       component: Profile
     },
     {
-      path: '/silent-renew',
-      name: 'silentrenew',
+      path: "/silent-renew",
+      name: "silentrenew",
       component: SilentRenew
+    },
+    {
+      path: "/chat",
+      name: "ChatBox",
+      component: ChatConversation
     }
   ],
-  mode: 'history'
+  mode: "history"
 })

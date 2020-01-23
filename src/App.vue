@@ -8,10 +8,15 @@ import AuthService from "./services/AuthService";
 import Layout from "./layout";
 import CallBackPage from "./modules/CallBack";
 
-const userInfo = JSON.parse(localStorage.getItem("user_info"));
-
 const connection = new signalr.HubConnectionBuilder()
   .withUrl(`http://localhost:5000/notification`, {
+    accessTokenFactory: async () => {
+      return new AuthService().getSignIn().then((res) => {
+        if(res){
+          return localStorage.getItem('access_token');
+        }
+      })
+    },
     skipNegotiation: true,
     transport: 1
   })
@@ -32,32 +37,17 @@ export default {
     Layout,
     CallBack: CallBackPage
   },
-  async created() {
-    connection.on("reveiveContactRequest", data => {
-      console.log(data, "connectionid", connection.id);
-    });
-
-    try {
-      const userInfo = localStorage.getItem("user_info");
-      if (userInfo) {
-        connection.qs = {
-          userId: 1
-        };
-      }
-
-      await connection.start();
-      console.assert(connection.state === 1);
-    } catch (error) {
-      console.log("error", error);
-      console.assert(connection.state === 0);
-      setTimeout(() => start(), 3000);
-    }
-  },
+  async created() {},
   mounted() {
     this.authService.getSignIn().then(isSignIn => {
       if (isSignIn) {
         this.isAuthenticated = isSignIn;
         this.dynamicComponent = "Layout";
+        // connection.on("reveiveContactRequest", data => {
+        //   console.log(data, "connectionid", connection.id);
+        // });
+        
+        // connection.start();
       }
     });
 

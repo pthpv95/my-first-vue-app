@@ -23,6 +23,7 @@ userManager.events.addAccessTokenExpiring(() => {
 
 userManager.events.addAccessTokenExpired(() => {
   console.log('token expired');
+  userManager.signinRedirect();
   localStorage.removeItem('access_token');
 })
 
@@ -57,7 +58,7 @@ export default class AuthService {
             this.signIn(null)
             return resolve(null)
           } else {
-            return resolve(user)
+            return resolve(user.access_token)
           }
         })
         .catch(error => {

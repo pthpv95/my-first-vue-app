@@ -9,6 +9,7 @@
 
 <script>
 import Header from './Header';
+//
 
 export default {
   components:{
@@ -18,7 +19,7 @@ export default {
 </script>
 
 <style>
-.main-page{
+/* .main-page{
   background-color: rgba(var(--b3f,250,250,250),1)
-}
+} */
 </style>

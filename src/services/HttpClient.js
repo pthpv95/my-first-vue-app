@@ -1,35 +1,28 @@
+import AuthService from './AuthService';
+
 const BASE_URL = "http://localhost:5000/"
 
-// const registerUser = (userName, firstName, lastName) => {
-//   const payload = {
-//     userName,
-//     firstName,
-//     lastName
-//   }
-//   const url = BASE_URL + "users"
-
-//   return fetch(url, {
-//     method: 'POST',
-//     mode: 'cors',
-//     cache: 'no-cache',
-//     headers: {
-//       co
-//     }
-//   })
-// }
-
+const authService = new AuthService();
 
 const getAsync = async (url) => {
-  const response = await fetch(url);
+  const token = await authService.getToken();
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
   return response.json();
 }
 
 const postAsync = async (url, payload) => {
+  const token = await authService.getToken();
   const response = await fetch(url, {
     method: 'POST',
     cache: 'no-cache',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify(payload)
   })

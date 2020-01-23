@@ -1,38 +1,32 @@
 <template>
   <div>
-    <!-- <b-container>
-      <div v-if="!isLoggedIn">
-        <SignIn />
-        <router-link v-if="!user" to="/sign-up">Sign up ?</router-link>
-      </div>
-      <h3 v-if="user !== null">
-        Hello
-        <strong>{{user.firstName}} {{user.lastName}}</strong>
-      </h3>
-    </b-container>-->
-    <b-container v-if="isLoggedIn">
+    <b-container>
       <b-row>
         <b-col>
-          <div>left</div>
+          <div>
+            <p>Your suggested friends</p>
+            <div v-for="contact in suggestedContacts" :key="contact.id">
+              <div>
+                <h3>{{contact.firstName + ' ' + contact.lastName}}</h3>
+                <button class="primary" @click="() => onFriendRequestedToAdd(contact.id)">Add friend</button>
+              </div>
+            </div>
+          </div>
         </b-col>
         <b-col cols="8">
           <div>main content</div>
         </b-col>
-        <p>Your suggested friends</p>
         <b-col>
-          <div v-for="contact in suggestedContacts" :key="contact.id">
-            <b-card
-              :title="contact.firstName + ' ' + contact.lastName"
-              img-alt="Image"
-              img-top
-              tag="article"
-            >
-              <b-button
+          <div>
+            <p>Your friends requests</p>
+            <div v-for="contact in contactsRequests" :key="contact.id">
+              <h3>{{contact.firstName + ' ' + contact.lastName}}</h3>
+              <a
                 href="#"
                 variant="primary"
-                @click="() => onFriendRequestedToAdd(contact.id)"
-              >Add friend</b-button>
-            </b-card>
+                @click="() => onFriendRequestedApproved(contact.id)"
+              >Approve</a>
+            </div>
           </div>
         </b-col>
       </b-row>
@@ -40,10 +34,15 @@
   </div>
 </template>
 <script>
-import * as signalr from "@aspnet/signalr";
+// import * as signalr from "@aspnet/signalr";
 
-import { getFriendSuggestions, addContact } from "./services";
-import SignIn from "../SignIn";
+import {
+  getFriendSuggestions,
+  getContactRequests,
+  addContact,
+  approveContactRequest
+} from "./services";
+import AuthService from "../../services/AuthService";
 
 export default {
   name: "Home",
@@ -51,41 +50,42 @@ export default {
     return {
       isLoggedIn: false,
       user: null,
-      suggestedContacts: []
+      suggestedContacts: [],
+      contactsRequests: [],
+      authSevice: new AuthService()
     };
   },
-  components: {
-    SignIn
-  },
+  components: {},
   props: {
     msg: String
   },
   async created() {},
   async mounted() {
-    const userInfo = JSON.parse(localStorage.getItem("user_info")) || null;
-    if (userInfo) {
-      this.user = {
-        id: userInfo.id,
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName
-      };
-      const result = await getFriendSuggestions(userInfo.id);
-      this.suggestedContacts = result.data;
-      this.isLoggedIn = true;
+    this.user = await this.authSevice.getProfile();
+    if (this.user) {
+      const contactsRequests = await getContactRequests();
+      const friendSuggestions = await getFriendSuggestions();
+      this.suggestedContacts = friendSuggestions.data;
+      this.contactsRequests = contactsRequests.data;
     }
   },
   destroyed() {},
   methods: {
-    logout() {
-      this.user = null;
-      localStorage.removeItem("user_info");
-      this.$router.push("/sign-up");
-    },
     onFriendRequestedToAdd(contactId) {
-      addContact(this.user.id, contactId).then(res => {
+      addContact(contactId)
+        .then(async (res) => {
+          if (res) {
+            this.suggestedContacts = this.suggestedContacts.filter(
+              c => c.id !== contactId
+            );
+          }
+        });
+    },
+    onFriendRequestedApproved(id) {
+      approveContactRequest(id).then(res => {
         if (res) {
-          this.suggestedContacts = this.suggestedContacts.filter(
-            c => c.id !== contactId
+          this.contactsRequests = this.contactsRequests.filter(
+            c => c.id !== id
           );
         }
       });

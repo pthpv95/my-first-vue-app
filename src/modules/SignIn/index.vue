@@ -26,7 +26,6 @@
   </b-card>
 </template>
 <script>
-import { BAlert, BCard, BContainer, BRow, BCol } from "bootstrap-vue";
 
 export default {
   data() {
@@ -41,7 +40,7 @@ export default {
     }
   },
   computed: {
-    validation(e) {
+    validation() {
       return true;
     }
   }
