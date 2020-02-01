@@ -1,6 +1,6 @@
 import AuthService from './AuthService';
 
-const BASE_URL = process.env.BASE_API_URL || "http://localhost:5000/";
+const BASE_URL = process.env.BASE_API_URL;
 
 const authService = new AuthService();
 

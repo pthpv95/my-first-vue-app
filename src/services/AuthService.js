@@ -2,8 +2,8 @@
 import oidc from "oidc-client"
 // import jwtDecode from "jwt-decode"
 
-const REDIRECT_URL = process.env.REDIRECT_URL || "http://localhost:8080/callback";
-const AUTHORITY = process.env.AUTHORITY || "http://localhost:5060/";
+const REDIRECT_URL = process.env.REDIRECT_URL;
+const AUTHORITY = process.env.AUTHORITY;
 
 const userManager = new oidc.UserManager({
   userStore: new oidc.WebStorageStateStore(),
