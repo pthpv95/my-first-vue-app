@@ -2,8 +2,8 @@
 import oidc from "oidc-client"
 // import jwtDecode from "jwt-decode"
 
-const REDIRECT_URL = process.env.REDIRECT_URL;
-const AUTHORITY = process.env.AUTHORITY;
+const REDIRECT_URL = "https://chatapp-web.herokuapp.com/callback";//process.env.REDIRECT_URL || "http://localhost:8080/callback";
+const AUTHORITY = "https://chat-identity-server.herokuapp.com/";//process.env.AUTHORITY || "http://localhost:5060/";
 
 const userManager = new oidc.UserManager({
   userStore: new oidc.WebStorageStateStore(),
