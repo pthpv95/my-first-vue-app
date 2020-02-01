@@ -2,11 +2,14 @@
 import oidc from "oidc-client"
 // import jwtDecode from "jwt-decode"
 
+const REDIRECT_URL = process.env.REDIRECT_URL || "http://localhost:8080/callback";
+const AUTHORITY = process.env.AUTHORITY || "http://localhost:5060/";
+
 const userManager = new oidc.UserManager({
   userStore: new oidc.WebStorageStateStore(),
-  authority: "http://localhost:5050",
+  authority: AUTHORITY,
   client_id: "spa",
-  redirect_uri: "http://localhost:8080/callback",
+  redirect_uri: REDIRECT_URL,
   response_type: "id_token token",
   scope: "openid api1 profile",
   post_logout_redirect_uri: window.location.origin + "/index.html",

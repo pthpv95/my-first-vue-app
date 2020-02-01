@@ -34,7 +34,6 @@
               <div class="send-message-box">
                 <input
                   class="send_message_input"
-                  autofocus
                   v-model="message"
                   placeholder="Message here"
                 />

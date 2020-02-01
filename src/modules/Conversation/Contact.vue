@@ -5,26 +5,49 @@
         <img
           src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
           class="rounded-circle user_img"
+          v-if="contact.avatar"
         />
+        <div v-if="!contact.avatar" class="user_img_default" 
+          v-bind:style="defaultAvatarStyleObject">{{avatarUrl}}
+        </div>
         <span class="online_icon"></span>
       </div>
       <div class="user_info">
-        <span>{{contact.firstName }} {{contact.lastName}}</span>
-        <p>Kalid is online</p>
+        <span>{{fullName}}</span>
+        <!-- <p>{{contact.firstName }} {{contact.lastName}} is online</p> -->
       </div>
     </div>
   </li>
 </template>
 
 <script>
+import {getFullNameAlias, getRandomColor } from './helper';
 export default {
   props: {
     isSelected: Boolean,
     contact: Object,
     onClick: Function
   },
+  data(){
+    return {
+      defaultAvatarStyleObject: {
+        backgroundColor: getRandomColor()
+      }
+    }
+  },
+  computed: {
+    avatarUrl(){
+      const firstName = this.contact.firstName || '';
+      const lastName = this.contact.lastName || '';
+      return getFullNameAlias(firstName, lastName)
+    },
+    fullName(){
+      return this.contact.firstName + ' ' + this.contact.lastName;
+    },
+  }
 };
 </script>
 
 <style>
+
 </style>

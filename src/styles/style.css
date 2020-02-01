@@ -85,6 +85,15 @@
   width: 70px;
   border: 1.5px solid #f5f6fa;
 }
+.user_img_default{
+  height: 70px;
+  width: 70px;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: 50%;
+  background-color: white;
+}
 .user_img_msg {
   height: 40px;
   width: 40px;

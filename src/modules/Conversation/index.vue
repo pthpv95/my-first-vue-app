@@ -31,13 +31,6 @@
         <div class="card">
           <div class="card-header msg_head">
             <div class="d-flex bd-highlight" v-if="selectedContact.id !== ''">
-              <div class="img_cont">
-                <img
-                  src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
-                  class="rounded-circle user_img"
-                />
-                <span class="online_icon"></span>
-              </div>
               <div class="user_info">
                 <span>{{selectedContact.title}}</span>
                 <p>1767 Messages</p>
@@ -74,19 +67,27 @@
           <div class="card-body msg_card_body" ref="cardBodyRef" v-if="selectedContact.id !== ''">
             <Message v-for="message in messages" :key="message.id" :message="message" />
           </div>
-          <form v-on:submit.prevent="onSubmit">
+          <div v-if="selectedContact.id === '' && this.user">
+            Hello {{this.user.userName}}
+          </div>
+          <form v-on:submit.prevent="onSubmit" v-if="selectedContact.id !== ''">
             <div class="card-footer">
+              <div v-if="selectedFile">
+                <img :src="selectedFile.previewSource" width="120px" height="120px"/>
+                <i class="fas fa-trash-alt" @click="onRemoveFile"></i>
+              </div>
               <div class="input-group">
                 <div class="input-group-append">
-                  <span class="input-group-text attach_btn">
-                    <i class="fas fa-paperclip"></i>
+                  <span class="input-group-text attach_btn" @click="onUploadFile">
+                    <i class="fas fa-image"></i>
+                    <input type="file" accept="image/*" hidden ref="fileUploadRef" @change="onFileChange"/>
                   </span>
                 </div>
                 <input
                   class="form-control type_msg"
                   v-model="newMessage"
                   placeholder="Type your message..."
-                  autofocus
+                  ref="messageInputRef"
                 />
                 <div class="input-group-append">
                   <span class="input-group-text send_btn" @click="onSubmit">
@@ -108,6 +109,7 @@ import Message from "./Message";
 import Contact from "./Contact";
 import moment from "moment";
 import { getContacts, getConversationInfo } from "./services";
+import { uploadFile, BASE_URL } from '../../services/HttpClient';
 import AuthService from "../../services/AuthService";
 
 export default {
@@ -125,7 +127,8 @@ export default {
       },
       message: "",
       authSevice: new AuthService(),
-      userId: ''
+      user: null,
+      selectedFile: null
     };
   },
   components: {
@@ -137,8 +140,11 @@ export default {
   },
   async mounted() {
     const user = await this.authSevice.getProfile();
-    this.userId = user.chatUserId;
-
+    this.user = {
+      id: user.chatUserId,
+      userName: user.userName
+    };
+    
     this.connection = new signalr.HubConnectionBuilder()
     .configureLogging(signalr.LogLevel.None)
       .withUrl(`http://localhost:5000/hub/chat`, {
@@ -160,13 +166,27 @@ export default {
     this.contacts = res.data;
 
     this.connection.on("ReceiveMessage", (res) => {
-      const isResponse = res.senderId !== this.userId;
-      this.messages.push({content: res.message, isResponse, sentAt: moment(new Date()).format("hh:mm A")});
+      if(res.senderId === this.selectedContact.userId || res.senderId === this.user.id){
+        const isResponse = res.senderId !== this.user.id;
+        this.messages.push({ 
+          text: res.message,
+          messageType: res.messageType,
+          attachmentUrl: res.attachmentUrl,
+          isResponse,
+          sentAt: moment(new Date()).format("HH:mm")});
+      }
     });
+  },
+  updated(){
+    if(this.$refs.cardBodyRef && !this.newMessage){
+      this.$refs.messageInputRef.focus();
+      this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight - this.$refs.cardBodyRef.clientHeight;
+    }
   },
   methods: {
     onContactClicked(id) {
       const contact = this.contacts.find(c => c.id === id);
+
       getConversationInfo(contact.userId).then((res) => {
         if(res){
           const data = res.data;
@@ -176,27 +196,59 @@ export default {
             title: data.title
           };
           this.messages = data.messages;
+          this.newMessage = '';
         }
       })
     },
     onSubmit() {
-      if (!this.newMessage.trim()) {
+      if (!this.newMessage.trim() && !this.selectedFile) {
         return;
       }
 
-      this.connection
-        .invoke("SendMessage", this.newMessage, this.selectedContact.userId)
+      if(this.selectedFile){
+        uploadFile(this.selectedFile.file).then((res) => {
+          const id = res.data;
+          const fileURL = `${BASE_URL}files/${id}`;
+          this.connection
+            .invoke("SendMessage", this.newMessage, fileURL, this.selectedContact.userId)
+            .then(() => {
+              this.newMessage = '';
+              this.selectedFile = null;
+            });
+          return;
+        }).catch((error) => {
+          throw error;
+        })
+      }else{
+        this.connection
+        .invoke("SendMessage", this.newMessage, null, this.selectedContact.userId)
         .then(() => {
           this.newMessage = "";
         });
-      // this.messages.push({
-      //   id: shortId(),
-      //   content: this.newMessage,
-      //   type: "sender",
-      //   sentAt: moment(new Date()).format("MM-DD HH:mm")
-      // });
-      // this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight;
+      }
     },
+    onUploadFile(){
+      this.$refs.fileUploadRef.click();
+    },
+    onFileChange(e){
+      const files = e.target.files;
+      this.selectedFile = {
+        file: files[0]
+      };
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.selectedFile = {
+          ...this.selectedFile,
+          previewSource : reader.result
+        }
+      };
+      if(files){
+        reader.readAsDataURL(files[0]);
+      }
+    },
+    onRemoveFile(){
+      this.selectedFile = null;
+    }
   }
 };
 </script>

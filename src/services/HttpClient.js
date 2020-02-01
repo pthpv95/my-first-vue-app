@@ -1,6 +1,6 @@
 import AuthService from './AuthService';
 
-const BASE_URL = "http://localhost:5000/"
+const BASE_URL = process.env.BASE_API_URL || "http://localhost:5000/";
 
 const authService = new AuthService();
 
@@ -30,4 +30,17 @@ const postAsync = async (url, payload) => {
   return response.json();
 }
 
-export { getAsync, postAsync, BASE_URL }
+const uploadFile = async (file) => {
+  const url = BASE_URL + 'files';
+  // const token = await authService.getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData
+  })
+  return response.json();
+}
+
+export { getAsync, postAsync, uploadFile, BASE_URL }
