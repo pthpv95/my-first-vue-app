@@ -147,7 +147,7 @@ export default {
     
     this.connection = new signalr.HubConnectionBuilder()
     .configureLogging(signalr.LogLevel.None)
-      .withUrl(`http://localhost:5000/hub/chat`, {
+      .withUrl(`${BASE_URL}hub/chat`, {
         accessTokenFactory: async () => {
           return new AuthService().getSignIn().then(res => {
             if (res) {

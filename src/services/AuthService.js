@@ -12,7 +12,6 @@ const userManager = new oidc.UserManager({
   redirect_uri: REDIRECT_URL,
   response_type: "id_token token",
   scope: "openid api1 profile",
-  post_logout_redirect_uri: window.location.origin + "/index.html",
   silent_redirect_uri: window.location.origin + "/silent-renew",
   accessTokenExpiringNotificationTime: 10,
   automaticSilentRenew: true,
