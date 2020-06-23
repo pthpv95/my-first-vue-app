@@ -2,21 +2,19 @@
 import oidc from "oidc-client"
 // import jwtDecode from "jwt-decode"
 
-const REDIRECT_URL = "http://chatapp-web.herokuapp.com/callback";//process.env.REDIRECT_URL || "http://localhost:8080/callback";
-const AUTHORITY = "http://chat-identity-server.herokuapp.com/";//process.env.AUTHORITY || "http://localhost:5060/";
-
 const userManager = new oidc.UserManager({
   userStore: new oidc.WebStorageStateStore(),
-  authority: AUTHORITY,
+  authority: process.env.VUE_APP_AUTHORITY,
   client_id: "spa",
-  redirect_uri: REDIRECT_URL,
+  redirect_uri: process.env.VUE_APP_REDIRECT_URL,
   response_type: "id_token token",
   scope: "openid api1 profile",
+  post_logout_redirect_uri: window.location.origin + "/index.html",
   silent_redirect_uri: window.location.origin + "/silent-renew",
   accessTokenExpiringNotificationTime: 10,
   automaticSilentRenew: true,
   filterProtocolClaims: true,
-  loadUserInfo: true
+  loadUserInfo: true,
 })
 
 userManager.events.addAccessTokenExpiring(() => {

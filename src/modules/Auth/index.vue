@@ -1,5 +1,7 @@
 <template>
-  <beat-loader></beat-loader>
+  <div style="width: 500px; margin: 0 auto">
+    <beat-loader :size="30"></beat-loader>
+  </div>
 </template>
 
 <script>
@@ -13,20 +15,10 @@ export default {
     }
   },
   mounted(){
-    this.authService.signinRedirectCallback().then((user) => {
-      if(user){
-        localStorage.setItem("access_token", user.access_token);
-        window.location.href = '/';
-      }else{
-        this.authService.signOut();
-      }
-    })
+    this.authService.signIn();
   },
   components:{
     'beat-loader': BeatLoader
-  },
-  props: {
-    signinParams: String
   }
 }
 </script>

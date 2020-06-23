@@ -5,35 +5,59 @@ import Home from "../modules/HomePage"
 import Profile from "../modules/Profile"
 import SilentRenew from '../modules/SilentRenew'
 import ChatConversation from "../modules/Conversation"
+import AuthPage from "../modules/Auth"
 
 Vue.use(Router)
-export default new Router({
+let router = new Router({
+  mode: 'history',
   routes: [
     {
       path: "/",
       name: Home,
-      component: Home
+      component: Home,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: "/sign-up",
       name: "sign-up",
-      component: SignUp
+      component: SignUp,
     },
     {
       path: "/profile",
       name: "profile",
-      component: Profile
+      component: Profile,
     },
     {
       path: "/silent-renew",
       name: "silentrenew",
-      component: SilentRenew
+      component: SilentRenew,
     },
     {
       path: "/chat",
       name: "ChatBox",
-      component: ChatConversation
-    }
+      component: ChatConversation,
+    },
+    {
+      path: "/auth",
+      name: "AuthPage",
+      component: AuthPage,
+    },
   ],
-  mode: "history"
 })
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    if (!localStorage.getItem("access_token")) {
+      next({
+        path: "/auth",
+        params: { nextUrl: to.fullPath },
+      })
+    }
+  } else {
+    next()
+  }
+})
+
+export default router
