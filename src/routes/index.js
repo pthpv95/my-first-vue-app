@@ -54,6 +54,8 @@ router.beforeEach((to, from, next) => {
         path: "/auth",
         params: { nextUrl: to.fullPath },
       })
+    }else{
+      next()
     }
   } else {
     next()
