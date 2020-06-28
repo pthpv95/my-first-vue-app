@@ -61,7 +61,7 @@ export default {
     const token = localStorage.getItem("access_token") || null;
     if (token) {
       const payload = jwt_decode(token);
-      this.user.avatarAlias = payload.userName;
+      this.user.avatarAlias = payload.user_name;
     }
   },
   methods: {
@@ -70,7 +70,7 @@ export default {
     },
     onSignOut(){
       localStorage.clear();
-      this.authService.signOut();
+      this.authService.signOut(); 
     }
   }
 };

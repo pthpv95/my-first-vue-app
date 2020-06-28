@@ -9,7 +9,7 @@ import AuthPage from "../modules/Auth"
 
 Vue.use(Router)
 let router = new Router({
-  mode: 'history',
+  mode: "history",
   routes: [
     {
       path: "/",
@@ -28,6 +28,9 @@ let router = new Router({
       path: "/profile",
       name: "profile",
       component: Profile,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: "/silent-renew",
@@ -38,6 +41,9 @@ let router = new Router({
       path: "/chat",
       name: "ChatBox",
       component: ChatConversation,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: "/auth",
