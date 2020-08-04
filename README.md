@@ -20,6 +20,4 @@ yarn build
 yarn lint
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
 BE repository: https://github.com/pthpv95/signalr-realtime-features-app
