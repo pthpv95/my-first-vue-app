@@ -141,12 +141,12 @@ export default {
   async mounted() {
     const user = await this.authSevice.getProfile();
     this.user = {
-      id: user.chatUserId,
-      userName: user.userName
+      id: user.chat_user_id,
+      userName: user.user_name
     };
     
     this.connection = new signalr.HubConnectionBuilder()
-    .configureLogging(signalr.LogLevel.None)
+    .configureLogging(signalr.LogLevel.Error)
       .withUrl(`${BASE_URL}hub/chat`, {
         accessTokenFactory: async () => {
           return new AuthService().getSignIn().then(res => {
@@ -186,7 +186,7 @@ export default {
   methods: {
     onContactClicked(id) {
       const contact = this.contacts.find(c => c.id === id);
-
+      
       getConversationInfo(contact.userId).then((res) => {
         if(res){
           const data = res.data;
