@@ -1,4 +1,4 @@
-# hello-world
+# Chat app frontend web using Vuejs.
 
 ## Project setup
 ```
