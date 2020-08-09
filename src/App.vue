@@ -3,24 +3,10 @@
 </template>
 
 <script>
-// import * as signalr from "@aspnet/signalr";
 import AuthService from "./services/AuthService";
 import Layout from "./layout";
 import CallBackPage from "./modules/CallBack";
-
-// const connection = new signalr.HubConnectionBuilder()
-//   .withUrl(`http://localhost:5000/notification`, {
-//     accessTokenFactory: async () => {
-//       return new AuthService().getSignIn().then((res) => {
-//         if(res){
-//           return localStorage.getItem('access_token');
-//         }
-//       })
-//     },
-//     skipNegotiation: true,
-//     transport: 1
-//   })
-//   .build();
+import { getAsync, BASE_URL } from "./services/HttpClient";
 
 export default {
   name: "app",
@@ -30,15 +16,15 @@ export default {
       isAuthenticated: false,
       dynamicComponent: "Layout",
       currentProps: "",
-      propsKey: ""
+      propsKey: "",
     };
   },
   components: {
     Layout,
-    CallBack: CallBackPage
+    CallBack: CallBackPage,
   },
   async created() {},
-  mounted() {
+  async mounted() {
     const url = this.$router.history.current.fullPath.substring(0, 9);
     if (url === "/callback") {
       const rest = this.$router.history.current.hash.substring(10);
@@ -46,7 +32,12 @@ export default {
       this.propsKey = "signinParams";
       this.dynamicComponent = "CallBack";
     }
-  }
+    const userInfo = localStorage.getItem('user_info');
+    getAsync(BASE_URL + "api/users").then((res) => {
+      const data = res.data;
+      localStorage.setItem('user_info', JSON.stringify(data))
+    });
+  },
 };
 </script>
 

@@ -1,6 +1,6 @@
 <template>
   <li :class="{'active': isSelected}" @click="() => onClick(contact.id)">
-    <div class="d-flex bd-highlight">
+    <div class="d-flex bd-highlight contact">
       <div class="img_cont">
         <img
           src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"

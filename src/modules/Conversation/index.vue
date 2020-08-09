@@ -67,20 +67,24 @@
           <div class="card-body msg_card_body" ref="cardBodyRef" v-if="selectedContact.id !== ''">
             <Message v-for="message in messages" :key="message.id" :message="message" />
           </div>
-          <div v-if="selectedContact.id === '' && this.user">
-            Hello {{this.user.userName}}
-          </div>
+          <div v-if="selectedContact.id === '' && this.user">Hello {{this.user.userName}}</div>
           <form v-on:submit.prevent="onSubmit" v-if="selectedContact.id !== ''">
             <div class="card-footer">
               <div v-if="selectedFile">
-                <img :src="selectedFile.previewSource" width="120px" height="120px"/>
+                <img :src="selectedFile.previewSource" width="120px" height="120px" />
                 <i class="fas fa-trash-alt" @click="onRemoveFile"></i>
               </div>
               <div class="input-group">
                 <div class="input-group-append">
                   <span class="input-group-text attach_btn" @click="onUploadFile">
                     <i class="fas fa-image"></i>
-                    <input type="file" accept="image/*" hidden ref="fileUploadRef" @change="onFileChange"/>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      ref="fileUploadRef"
+                      @change="onFileChange"
+                    />
                   </span>
                 </div>
                 <input
@@ -109,7 +113,7 @@ import Message from "./Message";
 import Contact from "./Contact";
 import moment from "moment";
 import { getContacts, getConversationInfo } from "./services";
-import { uploadFile, BASE_URL } from '../../services/HttpClient';
+import { uploadFile, BASE_URL } from "../../services/HttpClient";
 import AuthService from "../../services/AuthService";
 
 export default {
@@ -123,133 +127,200 @@ export default {
       contacts: [],
       messages: [],
       selectedContact: {
-        id: ""
+        id: "",
       },
       message: "",
       authSevice: new AuthService(),
       user: null,
-      selectedFile: null
+      selectedFile: null,
+      selectedConversationId: null,
     };
   },
   components: {
     Message,
-    Contact
+    Contact,
   },
   props: {
-    msg: String
+    msg: String,
   },
   async mounted() {
     const user = await this.authSevice.getProfile();
     this.user = {
       id: user.chat_user_id,
-      userName: user.user_name
+      userName: user.user_name,
     };
-    
-    this.connection = new signalr.HubConnectionBuilder()
-    .configureLogging(signalr.LogLevel.Error)
+
+    const connection = new signalr.HubConnectionBuilder()
+      .configureLogging(signalr.LogLevel.Trace)
       .withUrl(`${BASE_URL}hub/chat`, {
         accessTokenFactory: async () => {
-          return new AuthService().getSignIn().then(res => {
+          return new AuthService().getSignIn().then((res) => {
             if (res) {
               return localStorage.getItem("access_token");
             }
           });
         },
         skipNegotiation: true,
-        transport: 1
+        transport: 1,
       })
+      .configureLogging(signalr.LogLevel.Error)
       .build();
 
-    await this.connection.start();
+    this.connection = connection;
+
+    async function start() {
+      try {
+        await connection.start();
+        console.log("connected");
+      } catch (err) {
+        console.log(err);
+        setTimeout(() => start(), 5000);
+      }
+    }
+
+    await start();
 
     const res = await getContacts();
     this.contacts = res.data;
+    this.connection.on("HasNewPrivateMessageAsync", (res) => {
+      if (res.conversationId === this.selectedConversationId) {
+          const isResponse = res.senderId !== this.user.id;
+          this.messages.push({
+            id: res.messageId,
+            sentBy: res.sentBy,
+            text: res.message,
+            messageType: res.messageType,
+            attachmentUrl: res.attachmentUrl,
+            isResponse,
+            seen: res.seen,
+            sentAt: moment(new Date()).format("HH:mm"),
+          });
+        } else {
+          const contact = this.contacts.find(c => c.sentBy === res.sentBy)
+          console.log("new message in", contact);
+        }
+    });
 
-    this.connection.on("ReceiveMessage", (res) => {
-      if(res.senderId === this.selectedContact.userId || res.senderId === this.user.id){
-        const isResponse = res.senderId !== this.user.id;
-        this.messages.push({ 
-          text: res.message,
-          messageType: res.messageType,
-          attachmentUrl: res.attachmentUrl,
-          isResponse,
-          sentAt: moment(new Date()).format("HH:mm")});
+    this.connection.on("ReceiveReadReadMessageAsync", (data) => {
+      const lastMessage = this.messages[this.messages.length - 1];
+      if (
+        lastMessage &&
+        lastMessage.id === data.messageId &&
+        data.seenerId !== this.user.id
+      ) {
+        lastMessage.seen = true;
+        this.messages.forEach((mes, index) => {
+          if (index === this.messages.length - 1) {
+            mes.seen = true;
+          } else {
+            mes.seen = false;
+          }
+        });
       }
     });
+
+    this.connection.on("Typing", (data) => {
+      console.log(data);
+    });
   },
-  updated(){
-    if(this.$refs.cardBodyRef && !this.newMessage){
+  updated() {
+    if (this.$refs.cardBodyRef && !this.newMessage) {
       this.$refs.messageInputRef.focus();
-      this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight - this.$refs.cardBodyRef.clientHeight;
+      this.$refs.cardBodyRef.scrollTop =
+        this.$refs.cardBodyRef.scrollHeight -
+        this.$refs.cardBodyRef.clientHeight;
     }
   },
   methods: {
     onContactClicked(id) {
-      const contact = this.contacts.find(c => c.id === id);
-      
+      const contact = this.contacts.find((c) => c.id === id);
+
       getConversationInfo(contact.userId).then((res) => {
-        if(res){
+        if (res) {
           const data = res.data;
-          const selectedContact = this.contacts.find(c => c.id === id);
+          const selectedContact = this.contacts.find((c) => c.id === id);
           this.selectedContact = {
             ...selectedContact,
-            title: data.title
+            title: data.title,
           };
+          this.selectedConversationId = data.id;
           this.messages = data.messages;
-          this.newMessage = '';
+          this.newMessage = "";
+          if (data.messages.length > 0 && data.messages.some((m) => !m.seen)) {
+            const message = data.messages[data.messages.length - 1];
+            if (message.isResponse) {
+              console.log('trigger seen');
+              const messageId = message.id;
+              this.connection.invoke("ReadMessage", messageId, contact.userId);
+            }
+          }
         }
-      })
+      });
     },
     onSubmit() {
       if (!this.newMessage.trim() && !this.selectedFile) {
         return;
       }
 
-      if(this.selectedFile){
-        uploadFile(this.selectedFile.file).then((res) => {
-          const id = res.data;
-          const fileURL = `${BASE_URL}files/${id}`;
-          this.connection
-            .invoke("SendMessage", this.newMessage, fileURL, this.selectedContact.userId)
-            .then(() => {
-              this.newMessage = '';
-              this.selectedFile = null;
-            });
-          return;
-        }).catch((error) => {
-          throw error;
-        })
-      }else{
+      if (this.selectedFile) {
+        uploadFile(this.selectedFile.file)
+          .then((res) => {
+            const id = res.data;
+            const fileURL = `${BASE_URL}files/${id}`;
+            this.connection
+              .invoke(
+                "SendMessage",
+                this.newMessage,
+                fileURL,
+                this.selectedContact.userId,
+                this.selectedConversationId
+              )
+              .then(() => {
+                this.newMessage = "";
+                this.selectedFile = null;
+              });
+            return;
+          })
+          .catch((error) => {
+            throw error;
+          });
+      } else {
         this.connection
-        .invoke("SendMessage", this.newMessage, null, this.selectedContact.userId)
-        .then(() => {
-          this.newMessage = "";
-        });
+          .invoke(
+            "SendMessage",
+            this.newMessage,
+            null,
+            this.selectedContact.userId,
+            this.selectedConversationId
+          )
+          .then(() => {
+            this.newMessage = "";
+          });
       }
     },
-    onUploadFile(){
+    onUploadFile() {
       this.$refs.fileUploadRef.click();
     },
-    onFileChange(e){
+    onFileChange(e) {
       const files = e.target.files;
       this.selectedFile = {
-        file: files[0]
+        file: files[0],
       };
       const reader = new FileReader();
       reader.onload = () => {
         this.selectedFile = {
           ...this.selectedFile,
-          previewSource : reader.result
-        }
+          previewSource: reader.result,
+        };
       };
-      if(files){
+      if (files) {
         reader.readAsDataURL(files[0]);
       }
     },
-    onRemoveFile(){
+    onRemoveFile() {
       this.selectedFile = null;
-    }
-  }
+    },
+  },
 };
 </script>
 

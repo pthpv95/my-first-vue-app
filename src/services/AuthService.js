@@ -27,8 +27,8 @@ userManager.events.addAccessTokenExpired(() => {
   localStorage.removeItem('access_token');
 })
 
-oidc.Log.logger = console
-oidc.Log.Level = oidc.Log.INFO
+// oidc.Log.logger = console
+// oidc.Log.Level = oidc.Log.ERROR
 
 export default class AuthService {
   renewTokenManually() {

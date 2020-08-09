@@ -152,6 +152,7 @@
   background-color: #82ccdd;
   padding: 10px;
   position: relative;
+  min-width: 50px;
 }
 .msg_cotainer_send {
   margin-top: auto;
@@ -161,6 +162,7 @@
   background-color: #78e08f;
   padding: 10px;
   position: relative;
+  min-width: 50px;
 }
 .msg_time {
   position: absolute;
@@ -219,4 +221,8 @@
   .contacts_card {
     margin-bottom: 15px !important;
   }
+}
+
+.contact{
+  cursor: pointer;
 }
