@@ -143,6 +143,9 @@ export default {
   props: {
     msg: String,
   },
+  destroyed(){
+    this.selectedConversationId = null;
+  },
   async mounted() {
     const user = await this.authSevice.getProfile();
     this.user = {
@@ -195,14 +198,19 @@ export default {
             seen: res.seen,
             sentAt: moment(new Date()).format("HH:mm"),
           });
+          if(isResponse){
+            const receiverId = res.senderId;
+            console.log('read', this.selectedConversationId);
+            this.connection.invoke("ReadMessage", res.messageId, receiverId);
+          }
         } else {
           const contact = this.contacts.find(c => c.sentBy === res.sentBy)
-          console.log("new message in", contact);
+          console.log("new message in", contact.firstName);
         }
     });
 
     this.connection.on("ReceiveReadReadMessageAsync", (data) => {
-      const lastMessage = this.messages[this.messages.length - 1];
+      const lastMessage = this.messages.find(m => m.id === data.messageId);
       if (
         lastMessage &&
         lastMessage.id === data.messageId &&
@@ -220,7 +228,8 @@ export default {
     });
 
     this.connection.on("Typing", (data) => {
-      console.log(data);
+      const userTyping = this.contacts.find(c => c.contactUserId === data);
+      console.log(userTyping, 'is typing');
     });
   },
   updated() {
@@ -234,7 +243,7 @@ export default {
   methods: {
     onContactClicked(id) {
       const contact = this.contacts.find((c) => c.id === id);
-
+      this.selectedContact.id = contact.userId;
       getConversationInfo(contact.userId).then((res) => {
         if (res) {
           const data = res.data;
@@ -245,11 +254,10 @@ export default {
           };
           this.selectedConversationId = data.id;
           this.messages = data.messages;
-          this.newMessage = "";
+          this.newMessage = '';
           if (data.messages.length > 0 && data.messages.some((m) => !m.seen)) {
             const message = data.messages[data.messages.length - 1];
             if (message.isResponse) {
-              console.log('trigger seen');
               const messageId = message.id;
               this.connection.invoke("ReadMessage", messageId, contact.userId);
             }

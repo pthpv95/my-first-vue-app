@@ -52,7 +52,7 @@
         </b-nav-item-dropdown>
       </b-nav>
     </b-navbar>
-    <hr />
+    <hr>
   </div>
 </template>
 
@@ -61,7 +61,7 @@ import notificationIcon from "../assets/images/notification-icon.svg";
 import inboxIcon from "../assets/images/inbox-icon.png";
 import AuthService from "../services/AuthService";
 import * as signalr from "@aspnet/signalr";
-import { BASE_URL } from "../services/HttpClient";
+import { BASE_URL, getAsync } from "../services/HttpClient";
 
 export default {
   data() {
@@ -76,11 +76,13 @@ export default {
   },
   async mounted() {
     const token = localStorage.getItem("access_token") || null;
-    const userInfoPayload = localStorage.getItem('user_info');
     if (token) {
-      const userInfo = JSON.parse(userInfoPayload);
-      this.user.avatarAlias = userInfo.abbreviatedName;
-      this.user.firstName = userInfo.firstName;
+      getAsync(BASE_URL + "api/users").then((res) => {
+        const data = res.data;
+        localStorage.setItem('user_info', JSON.stringify(data));
+        this.user.avatarAlias = data.abbreviatedName;
+        this.user.firstName = data.firstName;
+      });
 
       this.connection = new signalr.HubConnectionBuilder()
         .withUrl(`${BASE_URL}hub/notification`, {
@@ -104,7 +106,6 @@ export default {
       });
 
       this.connection.on("HasUnreadMessagesAsync", (data) => {
-        console.log(data);
         this.unreadMessages = data;
       });
     }
