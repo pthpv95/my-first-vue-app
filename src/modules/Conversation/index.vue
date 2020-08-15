@@ -16,9 +16,10 @@
           <div class="card-body contacts_body">
             <ul class="contacts">
               <Contact
-                :key="contact.id"
+                :key="contact.key"
                 v-for="contact in contacts"
                 :isSelected="selectedContact.id === contact.id"
+                :typingConversations="typingConversations"
                 :contact="contact"
                 :onClick="onContactClicked"
               />
@@ -92,6 +93,7 @@
                   v-model="newMessage"
                   placeholder="Type your message..."
                   ref="messageInputRef"
+                  @keyup="onTyping"
                 />
                 <div class="input-group-append">
                   <span class="input-group-text send_btn" @click="onSubmit">
@@ -115,7 +117,7 @@ import moment from "moment";
 import { getContacts, getConversationInfo } from "./services";
 import { uploadFile, BASE_URL } from "../../services/HttpClient";
 import AuthService from "../../services/AuthService";
-
+import shortId from "shortid";
 export default {
   name: "ChatBox",
   data() {
@@ -134,6 +136,7 @@ export default {
       user: null,
       selectedFile: null,
       selectedConversationId: null,
+      typingConversations: [],
     };
   },
   components: {
@@ -143,7 +146,7 @@ export default {
   props: {
     msg: String,
   },
-  destroyed(){
+  destroyed() {
     this.selectedConversationId = null;
   },
   async mounted() {
@@ -184,33 +187,41 @@ export default {
     await start();
 
     const res = await getContacts();
-    this.contacts = res.data;
+    this.contacts = res.data.map((c) => ({ ...c, key: shortId.generate() }));
     this.connection.on("HasNewPrivateMessageAsync", (res) => {
       if (res.conversationId === this.selectedConversationId) {
-          const isResponse = res.senderId !== this.user.id;
-          this.messages.push({
-            id: res.messageId,
-            sentBy: res.sentBy,
-            text: res.message,
-            messageType: res.messageType,
-            attachmentUrl: res.attachmentUrl,
-            isResponse,
-            seen: res.seen,
-            sentAt: moment(new Date()).format("HH:mm"),
-          });
-          if(isResponse){
-            const receiverId = res.senderId;
-            console.log('read', this.selectedConversationId);
-            this.connection.invoke("ReadMessage", res.messageId, receiverId);
-          }
-        } else {
-          const contact = this.contacts.find(c => c.sentBy === res.sentBy)
-          console.log("new message in", contact.firstName);
+        const isResponse = res.senderId !== this.user.id;
+        this.messages.push({
+          id: res.messageId,
+          sentBy: res.sentBy,
+          text: res.message,
+          messageType: res.messageType,
+          attachmentUrl: res.attachmentUrl,
+          isResponse,
+          seen: res.seen,
+          sentAt: moment(new Date()).format("HH:mm"),
+        });
+        if (isResponse) {
+          const receiverId = res.senderId;
+          console.log("read", this.selectedConversationId);
+          this.connection.invoke("ReadMessage", res.messageId, receiverId);
+          this.typingConversations = this.typingConversations.filter(
+            (x) => x !== this.selectedConversationId
+          );
+          this.connection.invoke(
+            "MessageStopTyping",
+            this.selectedConversationId,
+            this.selectedContact.userId
+          );
         }
+      } else {
+        const contact = this.contacts.find((c) => c.sentBy === res.sentBy);
+        console.log("new message in", contact.firstName);
+      }
     });
 
     this.connection.on("ReceiveReadReadMessageAsync", (data) => {
-      const lastMessage = this.messages.find(m => m.id === data.messageId);
+      const lastMessage = this.messages.find((m) => m.id === data.messageId);
       if (
         lastMessage &&
         lastMessage.id === data.messageId &&
@@ -228,8 +239,33 @@ export default {
     });
 
     this.connection.on("Typing", (data) => {
-      const userTyping = this.contacts.find(c => c.contactUserId === data);
-      console.log(userTyping, 'is typing');
+      const userTyping = this.contacts.find(
+        (c) => c.contactUserId === data.userId
+      );
+      console.log(userTyping.firstName, "is typing");
+      userTyping.typing = true;
+      this.typingConversations.push(data.conversationId);
+
+      this.contacts = this.contacts.map((c) => {
+        c.typing = c.contactUserId === data.userId;
+        c.key = shortId.generate();
+        return c;
+      });
+    });
+
+    this.connection.on("StopTyping", (data) => {
+      const userTyping = this.contacts.find(
+        (c) => c.contactUserId === data.userId
+      );
+      console.log(userTyping.firstName, "is stop typing");
+      this.contacts = this.contacts.map((c) => {
+        c.typing = !c.contactUserId === data.userId;
+        c.key = shortId.generate();
+        return c;
+      });
+      this.typingConversations = this.typingConversations.filter(
+        (t) => t !== data.conversationId
+      );
     });
   },
   updated() {
@@ -251,10 +287,11 @@ export default {
           this.selectedContact = {
             ...selectedContact,
             title: data.title,
+            conversationId: data.id,
           };
           this.selectedConversationId = data.id;
           this.messages = data.messages;
-          this.newMessage = '';
+          this.newMessage = "";
           if (data.messages.length > 0 && data.messages.some((m) => !m.seen)) {
             const message = data.messages[data.messages.length - 1];
             if (message.isResponse) {
@@ -327,6 +364,28 @@ export default {
     },
     onRemoveFile() {
       this.selectedFile = null;
+    },
+    onTyping(e) {
+      if (
+        e.target.value &&
+        this.typingConversations.every((x) => x !== this.selectedConversationId)
+      ) {
+        this.typingConversations.push(this.selectedConversationId);
+        this.connection.invoke(
+          "MessageTyping",
+          this.selectedConversationId,
+          this.selectedContact.userId
+        );
+      } else if (!e.target.value) {
+        this.typingConversations = this.typingConversations.filter(
+          (x) => x !== this.selectedConversationId
+        );
+        this.connection.invoke(
+          "MessageStopTyping",
+          this.selectedConversationId,
+          this.selectedContact.userId
+        );
+      }
     },
   },
 };
