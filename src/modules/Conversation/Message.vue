@@ -10,12 +10,12 @@
       <div class="msg_cotainer">
         <template v-if="message.messageType === 0 && message.text">{{message.text}}</template>
         <img v-else :src="message.attachmentUrl" width="200px" height="200px" />
-        <span class="msg_time">{{message.sentAt}}</span>
+        <span class="msg_time">{{sentAt}}</span>
       </div>
     </div>
     <div class="d-flex justify-content-end mb-4" v-else>
       <div class="msg_cotainer_send">
-        <span class="msg_time_send">{{message.sentAt}} </span>
+        <span class="msg_time_send">{{sentAt}} </span>
         <template v-if="message.messageType === 0 && message.text">
           {{message.text}}
           <span v-if="message.seen">
@@ -35,10 +35,14 @@
 </template>
 
 <script>
+import moment from "moment";
+
 export default {
   name: "Message",
   data() {
-    return {};
+    return {
+      sentAt: moment(this.message.sentAt).format("HH:mm")
+    };
   },
   props: {
     message: Object,

@@ -65,8 +65,15 @@
               </ul>
             </div>
           </div>
-          <div class="card-body msg_card_body" ref="cardBodyRef" v-if="selectedContact.id !== ''">
+          <BeatLoader :loading="isLoading"></BeatLoader>
+          <div
+            class="card-body msg_card_body"
+            ref="cardBodyRef"
+            v-if="selectedContact.id !== ''"
+            @scroll="onScroll"
+          >
             <Message v-for="message in messages" :key="message.id" :message="message" />
+            <p v-show="isTyping" class="typing-message">{{this.selectedContact.name}} is typing ... </p>
           </div>
           <div v-if="selectedContact.id === '' && this.user">Hello {{this.user.userName}}</div>
           <form v-on:submit.prevent="onSubmit" v-if="selectedContact.id !== ''">
@@ -109,15 +116,17 @@
   </div>
 </template>
 <script>
-import * as signalr from "@aspnet/signalr";
+import * as signalr from "@microsoft/signalr";
 import defaultVueLogo from "../../assets/logo.png";
 import Message from "./Message";
 import Contact from "./Contact";
-import moment from "moment";
+import BeatLoader from "../../components/BeatLoader";
+import typingIcon from "../../assets/images/typing-icon.gif";
 import { getContacts, getConversationInfo } from "./services";
 import { uploadFile, BASE_URL } from "../../services/HttpClient";
 import AuthService from "../../services/AuthService";
 import shortId from "shortid";
+
 export default {
   name: "ChatBox",
   data() {
@@ -137,15 +146,23 @@ export default {
       selectedFile: null,
       selectedConversationId: null,
       typingConversations: [],
+      failed: 0,
+      cursor: null,
+      loadMore: false,
+      isLoading: false,
+      isTyping: false,
+      typingIcon
     };
   },
   components: {
     Message,
     Contact,
+    BeatLoader,
   },
   props: {
     msg: String,
   },
+  // life cycles
   destroyed() {
     this.selectedConversationId = null;
   },
@@ -169,28 +186,49 @@ export default {
         skipNegotiation: true,
         transport: 1,
       })
+      .withAutomaticReconnect([0, 3000, 5000, 10000, 15000, 30000])
       .configureLogging(signalr.LogLevel.Error)
       .build();
 
     this.connection = connection;
-
+    let failed = 0;
     async function start() {
       try {
         await connection.start();
         console.log("connected");
+        if (failed > 0) {
+          window.location.reload();
+        }
       } catch (err) {
-        console.log(err);
-        setTimeout(() => start(), 5000);
+        console.log("error");
+        failed++;
+        setTimeout(() => start(), 1000);
       }
     }
 
     await start();
+
+    connection.onreconnecting((error) => {
+      // const li = document.createElement("li");
+      // li.textContent = `Connection lost due to error "${error}". Reconnecting.`;
+      // document.getElementById("messagesList").appendChild(li);
+      console.log(`Connection lost due to error "${error}". Reconnecting.`);
+    });
+
+    connection.onreconnected(() => {
+      // const li = document.createElement("li");
+      // li.textContent = `Connection reestablished. Connected.`;
+      // document.getElementById("messagesList").appendChild(li);
+      console.log('Connection reestablished. Connected.');
+      location.reload();
+    });
 
     const res = await getContacts();
     this.contacts = res.data.map((c) => ({ ...c, key: shortId.generate() }));
     this.connection.on("HasNewPrivateMessageAsync", (res) => {
       if (res.conversationId === this.selectedConversationId) {
         const isResponse = res.senderId !== this.user.id;
+        this.loadMore = false;
         this.messages.push({
           id: res.messageId,
           sentBy: res.sentBy,
@@ -199,8 +237,9 @@ export default {
           attachmentUrl: res.attachmentUrl,
           isResponse,
           seen: res.seen,
-          sentAt: moment(new Date()).format("HH:mm"),
+          sentAt: res.sentAt,
         });
+        this.isTyping = false;
         if (isResponse) {
           const receiverId = res.senderId;
           console.log("read", this.selectedConversationId);
@@ -220,7 +259,7 @@ export default {
       }
     });
 
-    this.connection.on("ReceiveReadReadMessageAsync", (data) => {
+    this.connection.on("ReceiveReadMessageAsync", (data) => {
       const lastMessage = this.messages.find((m) => m.id === data.messageId);
       if (
         lastMessage &&
@@ -239,37 +278,49 @@ export default {
     });
 
     this.connection.on("Typing", (data) => {
-      const userTyping = this.contacts.find(
-        (c) => c.contactUserId === data.userId
-      );
-      console.log(userTyping.firstName, "is typing");
-      userTyping.typing = true;
-      this.typingConversations.push(data.conversationId);
+      this.isTyping = true;
+      if(data.conversationId === this.selectedConversationId){
+        return;
+      }
 
+      this.typingConversations.push(data.conversationId);
       this.contacts = this.contacts.map((c) => {
-        c.typing = c.contactUserId === data.userId;
-        c.key = shortId.generate();
+        const typing = c.userId === data.contactUserId;
+        if (typing) {
+          return {
+            ...c,
+            typing,
+            key: shortId.generate(),
+          };
+        }
         return c;
       });
     });
 
     this.connection.on("StopTyping", (data) => {
-      const userTyping = this.contacts.find(
-        (c) => c.contactUserId === data.userId
-      );
-      console.log(userTyping.firstName, "is stop typing");
+      if(data.conversationId === this.selectedConversationId){
+        this.isTyping = false;
+        return;
+      }
       this.contacts = this.contacts.map((c) => {
-        c.typing = !c.contactUserId === data.userId;
-        c.key = shortId.generate();
+        const isTyping = c.userId === data.contactUserId;
+        if (isTyping) {
+          return {
+            ...c,
+            typing: false,
+            key: shortId.generate(),
+          };
+        }
         return c;
       });
+
       this.typingConversations = this.typingConversations.filter(
         (t) => t !== data.conversationId
       );
     });
   },
   updated() {
-    if (this.$refs.cardBodyRef && !this.newMessage) {
+    if (this.$refs.cardBodyRef && !this.loadMore) {
       this.$refs.messageInputRef.focus();
       this.$refs.cardBodyRef.scrollTop =
         this.$refs.cardBodyRef.scrollHeight -
@@ -278,29 +329,73 @@ export default {
   },
   methods: {
     onContactClicked(id) {
+      if (this.selectedContact.contactId === id) return;
       const contact = this.contacts.find((c) => c.id === id);
       this.selectedContact.id = contact.userId;
-      getConversationInfo(contact.userId).then((res) => {
+      const input = {
+        contactUserId: contact.userId,
+        cursor: this.cursor,
+        conversationId: this.selectedConversationId,
+      };
+      getConversationInfo(input).then((res) => {
         if (res) {
           const data = res.data;
           const selectedContact = this.contacts.find((c) => c.id === id);
           this.selectedContact = {
             ...selectedContact,
-            title: data.title,
+            title: data.conversation.title,
             conversationId: data.id,
+            contactId: selectedContact.id,
+            name: selectedContact.firstName + ' ' + selectedContact.lastName
           };
-          this.selectedConversationId = data.id;
-          this.messages = data.messages;
+          this.selectedConversationId = data.conversation.id;
+          this.cursor = data.nextCursor;
+          this.messages = data.conversation.messages;
           this.newMessage = "";
-          if (data.messages.length > 0 && data.messages.some((m) => !m.seen)) {
-            const message = data.messages[data.messages.length - 1];
+          this.$refs.messageInputRef.focus();
+          this.$refs.cardBodyRef.scrollTop =
+            this.$refs.cardBodyRef.scrollHeight -
+            this.$refs.cardBodyRef.clientHeight;
+          this.loaded = true;
+          if (
+            data.conversation.messages.length > 0 &&
+            data.conversation.messages.some((m) => !m.seen)
+          ) {
+            const message =
+              data.conversation.messages[data.conversation.messages.length - 1];
             if (message.isResponse) {
               const messageId = message.id;
               this.connection.invoke("ReadMessage", messageId, contact.userId);
             }
           }
+
+          this.contacts.forEach((contact) => {
+            contact.key = shortId.generate();
+            contact.typing = false;
+          })
         }
       });
+    },
+    onScroll() {
+      if (this.$refs.cardBodyRef.scrollTop === 0 && this.cursor) {
+        this.loadMore = true;
+        const input = {
+          contactUserId: this.selectedContact.id,
+          cursor: this.cursor,
+          conversationId: this.selectedConversationId,
+        };
+        this.isLoading = true;
+        getConversationInfo(input).then((res) => {
+          if (res) {
+            const data = res.data;
+            this.selectedConversationId = data.conversation.id;
+            this.cursor = data.nextCursor;
+            this.messages = [...data.conversation.messages, ...this.messages];
+            this.isLoading = false;
+            this.$refs.cardBodyRef.scrollTop = 1;
+          }
+        });
+      }
     },
     onSubmit() {
       if (!this.newMessage.trim() && !this.selectedFile) {
@@ -388,6 +483,7 @@ export default {
       }
     },
   },
+  computed: {},
 };
 </script>
 
@@ -399,5 +495,12 @@ export default {
   background: #7f7fd5;
   background: -webkit-linear-gradient(to right, #91eae4, #86a8e7, #7f7fd5);
   background: linear-gradient(to right, #91eae4, #86a8e7, #7f7fd5);
+}
+
+.typing-message{
+  text-align: left;
+  margin-left: 33px;
+  margin-bottom: -20px;
+  color: whitesmoke;
 }
 </style>

@@ -60,7 +60,7 @@
 import notificationIcon from "../assets/images/notification-icon.svg";
 import inboxIcon from "../assets/images/inbox-icon.png";
 import AuthService from "../services/AuthService";
-import * as signalr from "@aspnet/signalr";
+import * as signalr from "@microsoft/signalr";
 import { BASE_URL, getAsync } from "../services/HttpClient";
 
 export default {
@@ -96,6 +96,7 @@ export default {
           skipNegotiation: true,
           transport: 1,
         })
+        .withAutomaticReconnect(3)
         .configureLogging(signalr.LogLevel.Error)
         .build();
 

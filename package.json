@@ -10,12 +10,13 @@
     "deploy": "aws s3 sync ./dist s3://awesome-chat-images"
   },
   "dependencies": {
-    "@aspnet/signalr": "^1.1.4",
+    "@microsoft/signalr": "^3.1.7",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.4",
     "core-js": "^2.6.5",
     "express": "^4.17.1",
     "jwt-decode": "^2.2.0",
+    "lodash": "^4.17.20",
     "moment": "^2.24.0",
     "node-sass": "^4.13.0",
     "oidc-client": "^1.9.1",
