@@ -2,6 +2,10 @@
   margin-top: auto;
   margin-bottom: auto;
 }
+.chat .back_botton{
+  margin-top: 3px;
+  font-size: 25px;
+}
 .card {
   height: 500px;
   border-radius: 15px !important;

@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid h-100 main_content">
     <div class="row justify-content-center h-100">
-      <div class="col-md-4 col-xl-3 chat">
+      <div class="col-md-4 col-xl-3 chat" v-if="isShowFriendList">
         <div class="card mb-sm-3 mb-md-0 contacts_card">
           <div class="card-header">
             <div class="input-group">
@@ -28,10 +28,11 @@
           <div class="card-footer"></div>
         </div>
       </div>
-      <div class="col-md-8 col-xl-6 chat">
+      <div class="col-md-8 col-xl-6 chat" v-if="isShowChatBox">
         <div class="card">
           <div class="card-header msg_head">
             <div class="d-flex bd-highlight" v-if="selectedContact.id !== ''">
+              <i class="fas fa-arrow-left back_botton" v-if="isMobileScreen" @click="onClickBack"></i>
               <div class="user_info">
                 <span>{{selectedContact.title}}</span>
                 <p>1767 Messages</p>
@@ -151,7 +152,10 @@ export default {
       loadMore: false,
       isLoading: false,
       isTyping: false,
-      typingIcon
+      typingIcon,
+      isMobileScreen: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      isShowFriendList: true,
+      isShowChatBox: true
     };
   },
   components: {
@@ -167,6 +171,9 @@ export default {
     this.selectedConversationId = null;
   },
   async mounted() {
+    if(this.isMobileScreen){
+      this.isShowChatBox = false;
+    }
     const user = await this.authSevice.getProfile();
     this.user = {
       id: user.chat_user_id,
@@ -239,7 +246,6 @@ export default {
           seen: res.seen,
           sentAt: res.sentAt,
         });
-        this.isTyping = false;
         if (isResponse) {
           const receiverId = res.senderId;
           console.log("read", this.selectedConversationId);
@@ -278,8 +284,8 @@ export default {
     });
 
     this.connection.on("Typing", (data) => {
-      this.isTyping = true;
       if(data.conversationId === this.selectedConversationId){
+        this.isTyping = true;
         return;
       }
 
@@ -298,7 +304,7 @@ export default {
     });
 
     this.connection.on("StopTyping", (data) => {
-      if(data.conversationId === this.selectedConversationId){
+      if(data.conversationId === this.selectedConversationId && !this.newMessage){
         this.isTyping = false;
         return;
       }
@@ -330,15 +336,22 @@ export default {
   methods: {
     onContactClicked(id) {
       if (this.selectedContact.contactId === id) return;
+
       const contact = this.contacts.find((c) => c.id === id);
+      if(contact.typing){
+        this.isTyping = true;
+      }
+
       this.selectedContact.id = contact.userId;
       const input = {
         contactUserId: contact.userId,
         cursor: this.cursor,
-        conversationId: this.selectedConversationId,
+        conversationId: null
       };
       getConversationInfo(input).then((res) => {
         if (res) {
+          this.isShowChatBox = true;
+          this.isShowFriendList = false;
           const data = res.data;
           const selectedContact = this.contacts.find((c) => c.id === id);
           this.selectedContact = {
@@ -352,10 +365,10 @@ export default {
           this.cursor = data.nextCursor;
           this.messages = data.conversation.messages;
           this.newMessage = "";
-          this.$refs.messageInputRef.focus();
-          this.$refs.cardBodyRef.scrollTop =
-            this.$refs.cardBodyRef.scrollHeight -
-            this.$refs.cardBodyRef.clientHeight;
+          if(!this.isMobileScreen){
+            this.$refs.messageInputRef.focus();
+            this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight - this.$refs.cardBodyRef.clientHeight;
+          }
           this.loaded = true;
           if (
             data.conversation.messages.length > 0 &&
@@ -482,6 +495,14 @@ export default {
         );
       }
     },
+    onClickBack(){
+      this.selectedConversationId = null;
+      this.selectedContact = {
+        id: ''
+      };
+      this.isShowFriendList = true;
+      this.isShowChatBox = false;
+    }
   },
   computed: {},
 };

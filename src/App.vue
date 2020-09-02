@@ -32,11 +32,11 @@ export default {
       this.propsKey = "signinParams";
       this.dynamicComponent = "CallBack";
     }
-    const userInfo = localStorage.getItem('user_info');
-    getAsync(BASE_URL + "api/users").then((res) => {
-      const data = res.data;
-      localStorage.setItem('user_info', JSON.stringify(data))
-    });
+    // const userInfo = localStorage.getItem('user_info');
+    // getAsync(BASE_URL + "api/users").then((res) => {
+    //   const data = res.data;
+    //   localStorage.setItem('user_info', JSON.stringify(data))
+    // });
   },
 };
 </script>

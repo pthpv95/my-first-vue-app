@@ -143,7 +143,7 @@ export default {
 
 <style lang="scss">
 .contacts {
-  height: 600px;
+  // height: 600px;
 }
 .card-contact {
   text-align: left;
