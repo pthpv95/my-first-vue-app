@@ -6,7 +6,6 @@
 import AuthService from "./services/AuthService";
 import Layout from "./layout";
 import CallBackPage from "./modules/CallBack";
-import { getAsync, BASE_URL } from "./services/HttpClient";
 
 export default {
   name: "app",

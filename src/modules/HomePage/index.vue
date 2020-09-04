@@ -14,7 +14,7 @@
           </div>
         </b-col>
         <b-col cols="8">
-          <div>main content</div>
+          <div>main content {{loadingState}}</div>
         </b-col>
         <b-col>
           <div>
@@ -34,7 +34,6 @@
   </div>
 </template>
 <script>
-// import * as signalr from "@aspnet/signalr";
 
 import {
   getFriendSuggestions,
@@ -43,6 +42,7 @@ import {
   approveContactRequest
 } from "./services";
 import AuthService from "../../services/AuthService";
+import { mapGetters, mapState, mapActions } from 'vuex'
 
 export default {
   name: "Home",
@@ -59,7 +59,20 @@ export default {
   props: {
     msg: String
   },
-  async created() {},
+  computed: {
+    ...mapState({
+      isLoading: state => state.loading.isLoading
+    }),
+    ...mapGetters('loading', {
+      loadingState: 'getLoadingState'
+    })
+  },
+  created() {
+    console.log(this.$store);
+    setTimeout(() => {
+      this.showLoading();
+    }, 2000)
+  },
   async mounted() {
     this.user = await this.authSevice.getProfile();
     if (this.user) {
@@ -71,6 +84,7 @@ export default {
   },
   destroyed() {},
   methods: {
+    ...mapActions('loading', ['showLoading', 'hideLoading']),
     onFriendRequestedToAdd(contactId) {
       addContact(contactId)
         .then(async (res) => {

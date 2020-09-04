@@ -181,7 +181,6 @@ export default {
     };
 
     const connection = new signalr.HubConnectionBuilder()
-      .configureLogging(signalr.LogLevel.Trace)
       .withUrl(`${BASE_URL}hub/chat`, {
         accessTokenFactory: async () => {
           return new AuthService().getSignIn().then((res) => {
@@ -194,7 +193,6 @@ export default {
         transport: 1,
       })
       .withAutomaticReconnect([0, 3000, 5000, 10000, 15000, 30000])
-      .configureLogging(signalr.LogLevel.Error)
       .build();
 
     this.connection = connection;
