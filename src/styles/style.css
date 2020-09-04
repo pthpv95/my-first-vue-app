@@ -7,7 +7,7 @@
   font-size: 25px;
 }
 .card {
-  height: 100vh;
+  height: 500px;
   border-radius: 15px !important;
   background-color: rgba(0, 0, 0, 0.4) !important;
 }
@@ -224,6 +224,9 @@
 @media (max-width: 576px) {
   .contacts_card {
     margin-bottom: 15px !important;
+  }
+  .card {
+    height: 500px;
   }
 }
 

@@ -208,6 +208,7 @@ export default {
         }
       } catch (err) {
         console.log("error");
+        this.authSevice.signIn();
         failed++;
         setTimeout(() => start(), 1000);
       }
@@ -350,8 +351,6 @@ export default {
       };
       getConversationInfo(input).then((res) => {
         if (res) {
-          this.isShowChatBox = true;
-          this.isShowFriendList = false;
           const data = res.data;
           const selectedContact = this.contacts.find((c) => c.id === id);
           this.selectedContact = {
@@ -365,9 +364,13 @@ export default {
           this.cursor = data.nextCursor;
           this.messages = data.conversation.messages;
           this.newMessage = "";
+          
           if(!this.isMobileScreen){
             this.$refs.messageInputRef.focus();
             this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight - this.$refs.cardBodyRef.clientHeight;
+          }else{
+            this.isShowChatBox = true;
+            this.isShowFriendList = false;
           }
           this.loaded = true;
           if (
