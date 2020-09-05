@@ -14,7 +14,7 @@
           </div>
         </b-col>
         <b-col cols="8">
-          <div>main content {{loadingState}}</div>
+          <div>Main content</div>
         </b-col>
         <b-col>
           <div>
@@ -34,15 +34,14 @@
   </div>
 </template>
 <script>
-
 import {
   getFriendSuggestions,
   getContactRequests,
   addContact,
-  approveContactRequest
+  approveContactRequest,
 } from "./services";
 import AuthService from "../../services/AuthService";
-import { mapGetters, mapState, mapActions } from 'vuex'
+import { mapGetters, mapActions } from "vuex";
 
 export default {
   name: "Home",
@@ -52,59 +51,54 @@ export default {
       user: null,
       suggestedContacts: [],
       contactsRequests: [],
-      authSevice: new AuthService()
+      authSevice: new AuthService(),
     };
   },
   components: {},
   props: {
-    msg: String
+    msg: String,
   },
   computed: {
-    ...mapState({
-      isLoading: state => state.loading.isLoading
+    ...mapGetters("ui", {
+      loadingState: "loadingState",
     }),
-    ...mapGetters('loading', {
-      loadingState: 'getLoadingState'
-    })
   },
-  created() {
-    console.log(this.$store);
-    setTimeout(() => {
-      this.showLoading();
-    }, 2000)
-  },
+  created() {},
   async mounted() {
+    this.showLoading();
     this.user = await this.authSevice.getProfile();
     if (this.user) {
       const contactsRequests = await getContactRequests();
       const friendSuggestions = await getFriendSuggestions();
       this.suggestedContacts = friendSuggestions.data;
       this.contactsRequests = contactsRequests.data;
+      setTimeout(() => {
+        this.hideLoading();
+      }, 2000);
     }
   },
   destroyed() {},
   methods: {
-    ...mapActions('loading', ['showLoading', 'hideLoading']),
+    ...mapActions("ui", ["showLoading", "hideLoading"]),
     onFriendRequestedToAdd(contactId) {
-      addContact(contactId)
-        .then(async (res) => {
-          if (res) {
-            this.suggestedContacts = this.suggestedContacts.filter(
-              c => c.id !== contactId
-            );
-          }
-        });
-    },
-    onFriendRequestedApproved(id) {
-      approveContactRequest(id).then(res => {
+      addContact(contactId).then(async (res) => {
         if (res) {
-          this.contactsRequests = this.contactsRequests.filter(
-            c => c.id !== id
+          this.suggestedContacts = this.suggestedContacts.filter(
+            (c) => c.id !== contactId
           );
         }
       });
-    }
-  }
+    },
+    onFriendRequestedApproved(id) {
+      approveContactRequest(id).then((res) => {
+        if (res) {
+          this.contactsRequests = this.contactsRequests.filter(
+            (c) => c.id !== id
+          );
+        }
+      });
+    },
+  },
 };
 </script>
 

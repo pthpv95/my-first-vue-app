@@ -1,5 +1,5 @@
 <template>
-  <div class="header">
+  <div class="header" v-show="!headerState">
     <b-navbar toggleable="lg" type="dark">
       <b-navbar-brand href="#">
         <router-link to="/">Home</router-link>
@@ -62,6 +62,7 @@ import inboxIcon from "../assets/images/inbox-icon.png";
 import AuthService from "../services/AuthService";
 import * as signalr from "@microsoft/signalr";
 import { BASE_URL, getAsync } from "../services/HttpClient";
+import { mapGetters, mapState, mapActions } from 'vuex'
 
 export default {
   data() {
@@ -112,6 +113,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions('ui', ['hideHeader']),
     onClickGoToProfile() {
       this.$router.push("/profile");
     },
@@ -119,6 +121,9 @@ export default {
       localStorage.clear();
       this.authService.signOut();
     },
+  },
+  computed: {
+    ...mapGetters('ui', ['headerState'])
   },
 };
 </script>

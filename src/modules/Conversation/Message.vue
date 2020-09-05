@@ -41,7 +41,7 @@ export default {
   name: "Message",
   data() {
     return {
-      sentAt: moment(this.message.sentAt).format("HH:mm")
+      sentAt: moment.utc(this.message.sentAt).local().format("HH:mm")
     };
   },
   props: {

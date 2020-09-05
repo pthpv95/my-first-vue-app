@@ -34,7 +34,7 @@
             <div class="d-flex bd-highlight" v-if="selectedContact.id !== ''">
               <i class="fas fa-arrow-left back_botton" v-if="isMobileScreen" @click="onClickBack"></i>
               <div class="user_info">
-                <span>{{selectedContact.title}}</span>
+                <span>{{selectedContact.name}}</span>
                 <p>1767 Messages</p>
               </div>
               <div class="video_cam">
@@ -76,6 +76,7 @@
             <Message v-for="message in messages" :key="message.id" :message="message" />
             <p v-show="isTyping" class="typing-message">{{this.selectedContact.name}} is typing ... </p>
           </div>
+          <div></div>
           <div v-if="selectedContact.id === '' && this.user">Hello {{this.user.userName}}</div>
           <form v-on:submit.prevent="onSubmit" v-if="selectedContact.id !== ''">
             <div class="card-footer">
@@ -127,6 +128,7 @@ import { getContacts, getConversationInfo } from "./services";
 import { uploadFile, BASE_URL } from "../../services/HttpClient";
 import AuthService from "../../services/AuthService";
 import shortId from "shortid";
+import { mapActions } from 'vuex';
 
 export default {
   name: "ChatBox",
@@ -192,45 +194,37 @@ export default {
         skipNegotiation: true,
         transport: 1,
       })
+      .configureLogging(4)
       .withAutomaticReconnect([0, 3000, 5000, 10000, 15000, 30000])
       .build();
 
     this.connection = connection;
-    let failed = 0;
     async function start() {
       try {
         await connection.start();
-        console.log("connected");
-        if (failed > 0) {
-          window.location.reload();
-        }
       } catch (err) {
         console.log("error");
         this.authSevice.signIn();
-        failed++;
-        setTimeout(() => start(), 1000);
+        setTimeout(() => start(), 3000);
       }
     }
+
+    this.showLoading();
 
     await start();
 
     connection.onreconnecting((error) => {
-      // const li = document.createElement("li");
-      // li.textContent = `Connection lost due to error "${error}". Reconnecting.`;
-      // document.getElementById("messagesList").appendChild(li);
       console.log(`Connection lost due to error "${error}". Reconnecting.`);
     });
 
     connection.onreconnected(() => {
-      // const li = document.createElement("li");
-      // li.textContent = `Connection reestablished. Connected.`;
-      // document.getElementById("messagesList").appendChild(li);
       console.log('Connection reestablished. Connected.');
-      location.reload();
     });
 
     const res = await getContacts();
     this.contacts = res.data.map((c) => ({ ...c, key: shortId.generate() }));
+    this.hideLoading();
+
     this.connection.on("HasNewPrivateMessageAsync", (res) => {
       if (res.conversationId === this.selectedConversationId) {
         const isResponse = res.senderId !== this.user.id;
@@ -333,6 +327,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions('ui', ['hideHeader', 'showHeader', 'showLoading', 'hideLoading']),
     onContactClicked(id) {
       if (this.selectedContact.contactId === id) return;
 
@@ -369,6 +364,7 @@ export default {
           }else{
             this.isShowChatBox = true;
             this.isShowFriendList = false;
+            this.hideHeader();
           }
           this.loaded = true;
           if (
@@ -392,13 +388,13 @@ export default {
     },
     onScroll() {
       if (this.$refs.cardBodyRef.scrollTop === 0 && this.cursor) {
+        this.isLoading = true;
         this.loadMore = true;
         const input = {
           contactUserId: this.selectedContact.id,
           cursor: this.cursor,
           conversationId: this.selectedConversationId,
         };
-        this.isLoading = true;
         getConversationInfo(input).then((res) => {
           if (res) {
             const data = res.data;
@@ -406,7 +402,7 @@ export default {
             this.cursor = data.nextCursor;
             this.messages = [...data.conversation.messages, ...this.messages];
             this.isLoading = false;
-            this.$refs.cardBodyRef.scrollTop = 1;
+            this.$refs.cardBodyRef.scrollTop = 5;
           }
         });
       }
@@ -503,6 +499,7 @@ export default {
       };
       this.isShowFriendList = true;
       this.isShowChatBox = false;
+      this.showHeader();
     }
   },
   computed: {},
