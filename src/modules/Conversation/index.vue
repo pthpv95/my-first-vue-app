@@ -74,9 +74,8 @@
             @scroll="onScroll"
           >
             <Message v-for="message in messages" :key="message.id" :message="message" />
-            <p v-show="isTyping" class="typing-message">{{this.selectedContact.name}} is typing ... </p>
           </div>
-          <div></div>
+          <p v-show="isTyping" class="typing-message">{{this.selectedContact.name}} is typing ... </p>
           <div v-if="selectedContact.id === '' && this.user">Hello {{this.user.userName}}</div>
           <form v-on:submit.prevent="onSubmit" v-if="selectedContact.id !== ''">
             <div class="card-footer">
@@ -218,6 +217,7 @@ export default {
     });
 
     connection.onreconnected(() => {
+      this.authSevice.getProfile();
       console.log('Connection reestablished. Connected.');
     });
 
@@ -330,16 +330,14 @@ export default {
     ...mapActions('ui', ['hideHeader', 'showHeader', 'showLoading', 'hideLoading']),
     onContactClicked(id) {
       if (this.selectedContact.contactId === id) return;
-
+      this.showLoading()
       const contact = this.contacts.find((c) => c.id === id);
-      if(contact.typing){
-        this.isTyping = true;
-      }
+      this.isTyping = contact.typing;
 
       this.selectedContact.id = contact.userId;
       const input = {
         contactUserId: contact.userId,
-        cursor: this.cursor,
+        cursor: null,
         conversationId: null
       };
       getConversationInfo(input).then((res) => {
@@ -357,16 +355,15 @@ export default {
           this.cursor = data.nextCursor;
           this.messages = data.conversation.messages;
           this.newMessage = "";
-          
+          this.hideLoading()
           if(!this.isMobileScreen){
             this.$refs.messageInputRef.focus();
-            this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight - this.$refs.cardBodyRef.clientHeight;
+            this.$refs.cardBodyRef.scrollTop = this.$refs.cardBodyRef.scrollHeight;
           }else{
             this.isShowChatBox = true;
             this.isShowFriendList = false;
             this.hideHeader();
           }
-          this.loaded = true;
           if (
             data.conversation.messages.length > 0 &&
             data.conversation.messages.some((m) => !m.seen)
@@ -447,6 +444,12 @@ export default {
             this.newMessage = "";
           });
       }
+
+      this.connection.invoke(
+        "MessageStopTyping",
+        this.selectedConversationId,
+        this.selectedContact.userId
+      );
     },
     onUploadFile() {
       this.$refs.fileUploadRef.click();
@@ -519,7 +522,7 @@ export default {
 .typing-message{
   text-align: left;
   margin-left: 33px;
-  margin-bottom: -20px;
+  bottom: 0;
   color: whitesmoke;
 }
 </style>

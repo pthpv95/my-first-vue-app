@@ -28,15 +28,14 @@
           </b-dropdown-item>
           <b-dropdown-item @click="onSignOut">Sign Out</b-dropdown-item>
         </b-nav-item-dropdown>
-        <b-nav-item-dropdown right no-caret>
-          <template v-slot:button-content>
+        <b-navbar-nav>
+          <b-nav-item href="#">
+            <h5 class="number-of-noti" v-if="unreadMessages !== 0">{{unreadMessages}}</h5>
             <router-link to="/chat">
               <img class="inbox-icon" :src="inboxIcon" />
-              <h5 class="number-of-noti" v-if="unreadMessages !== 0">{{unreadMessages}}</h5>
             </router-link>
-          </template>
-          <!-- <b-dropdown-item href="#">There's no records.</b-dropdown-item> -->
-        </b-nav-item-dropdown>
+          </b-nav-item>
+        </b-navbar-nav>
         <b-nav-item-dropdown right no-caret>
           <template v-slot:button-content>
             <em>
@@ -153,8 +152,8 @@ export default {
 }
 .number-of-noti {
   position: absolute;
-  left: 38px;
-  top: 2px;
+  right: 90px;
+  top: 9px;
   background: rgb(204, 0, 0);
   border-radius: 50%;
   color: #ffffff;

@@ -32,6 +32,10 @@ export default {
 </script>
 
 <style lang='scss'>
+.loading {
+  opacity: 0.5;
+}
+
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -39,7 +43,6 @@ export default {
   text-align: center;
   color: #2c3e50;
   .loading {
-    opacity: 0.5;
     width: 80px;
     position: absolute;
     margin: auto;

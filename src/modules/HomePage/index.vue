@@ -72,9 +72,7 @@ export default {
       const friendSuggestions = await getFriendSuggestions();
       this.suggestedContacts = friendSuggestions.data;
       this.contactsRequests = contactsRequests.data;
-      setTimeout(() => {
-        this.hideLoading();
-      }, 2000);
+      this.hideLoading();
     }
   },
   destroyed() {},
